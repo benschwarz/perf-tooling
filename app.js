@@ -10,7 +10,7 @@ var request     = require( 'request' );
 var config      = {
   cdn       : process.env.CDN_URL || '',
   dataDir   : 'data',
-  listPages : [ 'articles', 'slides', 'tools', 'videos' ],
+  listPages : [ 'articles', 'books', 'slides', 'tools', 'videos' ],
   github    : {
     id    : process.env.GITHUB_ID,
     token : process.env.GITHUB_TOKEN
@@ -104,6 +104,7 @@ var data         = {
 };
 
 data.articles = getList( 'articles' );
+data.books    = getList( 'books' );
 data.slides   = getList( 'slides' );
 data.tools    = getList( 'tools' );
 data.videos   = getList( 'videos' );
@@ -123,6 +124,7 @@ var pages = {
   index    : null,
   tools    : null,
   articles : null,
+  books    : null,
   slides   : null,
   videos   : null
 };
@@ -272,6 +274,11 @@ function fetchTwitterUserMeta() {
     _.each( data.articles, function( entry ) {
       if ( entry.social && entry.social.twitter ) {
         fetchTwitterUserData( entry.social.twitter, 'articles' );
+      }
+    } );
+    _.each( data.books, function( entry ) {
+      if ( entry.social && entry.social.twitter ) {
+        fetchTwitterUserData( entry.social.twitter, 'books' );
       }
     } );
     _.each( data.slides, function( entry ) {
@@ -455,6 +462,7 @@ function renderPage( type, query ) {
         resourceCount : {
           tools    : data.tools.length,
           articles : data.articles.length,
+          books    : data.books.length,
           videos   : data.videos.length,
           slides   : data.slides.length
         },
