@@ -5,10 +5,14 @@
     partial(
       'templates/partials/head.tpl',
       {
-        cdn  : cdn,
-        css  : css,
-        site : site,
-        svg  : svg
+        cdn       : cdn,
+        css       : css,
+        site      : site,
+        enhance   : enhance,
+        cssCookie : cssCookie,
+        hash      : hash,
+        name      : name,
+        type      : type
       }
     )
   %>
@@ -19,18 +23,19 @@
         partial(
           'templates/partials/header.tpl',
           {
-            active : type,
-            cdn    : cdn,
-            site   : site
+            active           : type,
+            cdn              : cdn,
+            hash             : hash,
+            site             : site
           }
         )
       %>
 
-      <main class="main">
+      <main class="site__main">
 
-        <div class="container">
+        <div class="grid__container">
 
-          <section class="section section-intro">
+          <section class="site__section site__section--intro">
 
             <img src="<%= cdn %>/perf-tooling.svg" alt="perf-tooling logo" width="546" height="370" class="center-block">
 
@@ -39,9 +44,10 @@
               <h1>perf-tooling.today</h1>
               <h2 class="subline">Start performance tooling today</h2>
 
-              <a class="btn btn-scroll js-scroll" href="#features" title="Scroll to features">
-                <span class="visuallyhidden">Scroll to features</span><svg>
-                  <use xlink:href="#icon-arrow" />
+              <a class="btn btn--scroll js-scroll" href="#features" title="Scroll to features">
+                <span class="visuallyhidden">Scroll to features</span>
+                <svg class="icon icon--3x icon--black">
+                  <use xlink:href="/icons-<%= hash.svg %>.svg#arrow" />
                 </svg>
               </a>
 
@@ -49,84 +55,124 @@
 
           </section>
 
-          <section class="section">
+          <section class="site__section">
 
             <div class="text-center">
 
-              <h2>Automize. Monitore. Improve</h2>
-              <h3 class="subline">Perf tooling is a collection of powerful resources which will help you to improve your workflow and to deliver better and faster websites.</h3>
+              <h2>Automate. Monitor. Improve.</h2>
+              <h3 class="subline">Perf-tooling is a collection of powerful resources which will help you to improve your workflow and to deliver better and faster websites.</h3>
 
             </div>
 
           </section>
 
-          <section id="features" class="section">
+          <section id="features" class="site__section">
 
-            <div class="row">
+            <div class="flexgrid__container flexgrid-2">
 
-              <div class="col-6">
+              <article class="article flexgrid__item">
 
-                <article class="article">
+                <h3><%= resourceCount.tools %> Tools</h3>
 
-                  <h3><%= resourceCount.tools %> Tools</h3>
+                <p>A rich collection of tools available to optimize and/or monitor your website's performance including bookmarklets, browser extensions, command line tools, node modules and grunt/gulp tasks.</p>
 
-                  <p>A rich collection of tools available to optimize and/or monitor your website's performance including bookmarklets, browser extensions, command line tools, node modules and grunt/gulp tasks.</p>
+                <div class="article__cta">
 
-                </article>
+                  <a href="/tools" title="Link to tools" class="btn btn--large btn--primary">Explore Tools</a>
 
-              </div>
+                </div>
 
-              <div class="col-6">
+              </article>
 
-                <article class="article">
+              <article class="article flexgrid__item">
 
-                  <h3><%= resourceCount.articles %> Articles</h3>
+                <h3><%= resourceCount.articles %> Articles</h3>
 
-                  <p>An exclusive list of articles that inform about best practices to build fast websites and to make your visitors happy.</p>
+                <p>An exclusive list of articles about best practices to build fast websites which will make your visitors happy.</p>
 
-                </article>
+                <div class="article__cta">
 
-              </div>
+                  <a href="/articles" title="Link to articles" class="btn btn--large btn--primary">Explore Articles</a>
 
-            </div>
+                </div>
 
-            <div class="row">
+              </article>
 
-              <div class="col-6">
+              <article class="article flexgrid__item">
 
-                <article class="article">
+                <h3><%= resourceCount.videos %> Videos</h3>
 
-                  <h3><%= resourceCount.videos %> Videos</h3>
+                <p>A collection of recent videos including performance-specific tips and tricks to build better and faster websites.</p>
 
-                  <p>An exclusive collection of recent videos including performance specific tipps and tricks to build better and faster websites.</p>
+                <div class="article__cta">
 
-                </article>
+                  <a href="/videos" title="Link to videos" class="btn btn--large btn--primary">Explore Videos</a>
 
-              </div>
+                </div>
 
-              <div class="col-6">
+              </article>
 
-                <article class="article">
+              <article class="article flexgrid__item">
 
-                  <h3><%= resourceCount.slides %> Slidedecks</h3>
+                <h3><%= resourceCount.slides %> Slidedecks</h3>
 
-                  <p>An exclusive collection of slides of great talks covering performance related topics.</p>
+                <p>A library of slides from great talks covering performance-related topics.</p>
 
-                </article>
+                <div class="article__cta">
 
-              </div>
+                  <a href="/slides" title="Link to slides" class="btn btn--large btn--primary">Explore Slidedecks</a>
 
-            </div>
+                </div>
 
-            <div class="text-center">
+              </article>
 
-              <a href="/tools" title="Link to tools" class="btn btn-large btn-primary">Explore Tools</a>
+              <article class="article flexgrid__item">
+
+                <h3><%= resourceCount.books %> Books</h3>
+
+                <p>Our books section features recommended books from some of the most influential authors in the field.</p>
+
+                <div class="article__cta">
+
+                  <a href="/books" title="Link to tools" class="btn btn--large btn--primary">Explore Books</a>
+
+                </div>
+
+              </article>
+
+              <article class="article flexgrid__item">
+
+                <h3><%= resourceCount.courses %> Courses</h3>
+
+                <p>For self-learners, we include courses to get you going.</p>
+
+                <div class="article__cta">
+
+                  <a href="/courses" title="Link to tools" class="btn btn--large btn--primary">Explore Courses</a>
+
+                </div>
+
+              </article>
+
+              <article class="article flexgrid__item">
+
+                <h3><%= resourceCount.audits %> Audits</h3>
+
+                <p>Performance audits of popular sites made by experts. Good to learn about common mistakes.</p>
+
+                <div class="article__cta">
+
+                  <a href="/audits" title="Link to audits" class="btn btn--large btn--primary">Explore Audits</a>
+
+                </div>
+
+              </article>
 
             </div>
 
           </section>
 
-          <section class="section">
+          <section class="site__section">
 
             <article class="article">
 
@@ -134,76 +180,234 @@
 
               <p>You want to add a tool? Great!<br>
               Either <a href="https://github.com/stefanjudis/perf-tooling/issues" title="Link to repo issues" target="_blank">create an issue</a> and we'll add it to perf-tooling.today.</p>
-              <p>Or propose a pull request and add a tool by adding a new JSON file to the <a href="https://github.com/stefanjudis/perf-tooling/tree/master/data" title="Link to data folder" target="_blank">data folder</a>. The JSON files in these folders will be automatically rendered using a template based in the <a href="https://github.com/stefanjudis/perf-tooling/tree/master/templates" title="Link to templates folder" target="_blank">templates folder</a>. For more detailed information check the <a href="https://github.com/stefanjudis/perf-tooling/blob/master/CONTRIBUTING.md" title="Link to contributing readme" target="_blank">CONTRIBUTING.md</a>.</p>
+              <p>Or propose a pull request and add a tool by adding a new JSON file to the <a href="https://github.com/stefanjudis/perf-tooling/tree/master/data" title="Link to data folder" target="_blank">data folder</a>. The JSON files in these folders will be automatically rendered using a template based in the <a href="https://github.com/stefanjudis/perf-tooling/tree/master/templates" title="Link to templates folder" target="_blank">templates folder</a>. For more detailed information check the <a href="https://github.com/stefanjudis/perf-tooling/blob/master/.github/CONTRIBUTING.md" title="Link to contributing readme" target="_blank">CONTRIBUTING.md</a>.</p>
               <p><em>By proposing a pull request you will be added to the footer contributors list automatically.</em></p>
-              <p>We would like this project to become a shared resource maintained be the community, so if you have any ideas on how to improve it or make it better, please let us know and <a href="https://github.com/stefanjudis/perf-tooling/issues" title="Link to repo issues" target="_blank">file an issue on Github.</a></p>
+              <p>We would like this project to become a shared resource maintained by the community, so if you have any ideas on how to improve it or make it better, please let us know and <a href="https://github.com/stefanjudis/perf-tooling/issues" title="Link to repo issues" target="_blank">file an issue on Github.</a></p>
 
             </article>
 
             <div class="text-center">
 
-              <a href="https://github.com/stefanjudis/perf-tooling/issues" class="btn btn-primary" title="Link to repo issues" target="_blank">Submit a resource</a>
-              <a href="https://github.com/stefanjudis/perf-tooling/blob/master/CONTRIBUTING.md" class="btn btn-primary" title="Link to contribute readme" target="_blank">Contribute to project</a>
+              <a href="https://github.com/stefanjudis/perf-tooling/issues" class="btn btn--primary" title="Link to repo issues" target="_blank">Submit a resource</a>
+              <a href="https://github.com/stefanjudis/perf-tooling/blob/master/.github/CONTRIBUTING.md" class="btn btn--primary" title="Link to contribute readme" target="_blank">Contribute to project</a>
 
             </div>
 
           </section>
 
-          <section class="section buildBy text-center">
+          <section class="site__section text-center">
 
-            <h3>Built by Stefan Judis<br>& Marco Biedermann</h3>
+            <article class="article">
 
-            <ul class="buildBy-socialList">
+              <p><a href="https://twitter.com/intent/tweet?url=http%3A%2F%2Fperf-tooling.today&text=@perf_tooling%20A%20resource%20collection%20to%20improve%20your%20workflow%20and%20to%20deliver%20better%20and%20faster%20websites%20%23perfmatters" target="_blank" class="btn btn--primary btn--large">Spread on Twitter</a></p>
+              <p><a href="https://twitter.com/perf_tooling" class="link--text" title="perf-tooling on Twitter" target="_blank">Follow <strong>@perf_tooling</strong> on Twitter</a></p>
 
-              <li>
-                <a href="https://twitter.com/stefanjudis" title="Link to Stefan on Twitter" target="_blank">
-                  <span class="visuallyhidden">Stefan on Twitter</span>
-                  <svg>
-                    <use xlink:href="#icon-twitter" />
-                  </svg>
-                </a>
-              </li>
+            </article>
 
-              <li>
-                <a href="https://github.com/stefanjudis" title="Link to Stefan on GitHub" target="_blank">
-                  <span class="visuallyhidden">Stefan on Github</span>
-                  <svg>
-                    <use xlink:href="#icon-github" />
-                  </svg>
-                </a>
-              </li>
+          </section>
 
-              <li>
-                <a href="mailto:stefanjudis@gmail.com" title="Send Stafan an email" target="_blank">
-                  <span class="visuallyhidden">Stefan's email address</span>
-                  <svg>
-                    <use xlink:href="#icon-email" />
-                  </svg>
-                </a>
-              </li>
+          <section class="site__section text-center">
 
-            </ul>
-            <ul class="buildBy-socialList">
+            <h2>Newsletter</h2>
 
-              <li>
-                <a href="https://github.com/marcobiedermann" title="Link to Marco on GitHub" target="_blank">
-                  <span class="visuallyhidden">Marco on Github</span>
-                  <svg>
-                    <use xlink:href="#icon-github" />
-                  </svg>
-                </a>
-              </li>
+            <div id="mc_embed_signup">
 
-              <li>
-                <a href="https://twitter.com/m412c0b" title="Link to Marco on Twitter" target="_blank">
-                  <span class="visuallyhidden">Marco on Twitter</span>
-                  <svg>
-                    <use xlink:href="#icon-twitter" />
-                  </svg>
-                </a>
-              </li>
+              <form action="//today.us9.list-manage.com/subscribe/post?u=8c4e72deda8b5599ce3bea3ff&amp;id=51ba0e71cf" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="form validate" target="_blank" novalidate>
 
-            </ul>
+                <div id="mc_embed_signup_scroll" class="form-field">
+
+                  <label for="mce-EMAIL">Subscribe to our mailing list to get informed about our newest content.</label>
+                  <div class="grid__col--6 center-block">
+
+                    <input type="email" value="" name="EMAIL" class="email input-text" id="mce-EMAIL" placeholder="Enter your email" required>
+
+                  </div>
+
+                  <div style="position: absolute; left: -5000px;">
+
+                    <input type="text" name="b_8c4e72deda8b5599ce3bea3ff_51ba0e71cf" tabindex="-1" value="">
+
+                  </div>
+
+                </div>
+
+                <div class="form__field">
+
+                  <input type="submit" value="Subscribe" name="subscribe" id="mc-embedded-subscribe" class="btn btn--large btn--primary">
+
+                </div>
+
+              </form>
+
+            </div>
+
+          </section>
+
+          <section class="site__section text-center">
+            <h3>Built by the Perf Tooling Team</h3>
+
+            <div class="flexgrid__container flexgrid-3">
+              <div class="flexgrid__item">
+                <h4>Stefan Judis</h4>
+                <ul class="list--inline list--unstyled">
+                  <li>
+                    <a href="https://github.com/stefanjudis" title="Link to Stefan on GitHub" target="_blank">
+                      <span class="visuallyhidden">Stefan on Github</span>
+                      <svg class="icon icon--2x icon--black animate--scale--hover">
+                        <use xlink:href="/icons-<%= hash.svg %>.svg#github" />
+                      </svg>
+                    </a>
+                  </li>
+
+                  <li>
+                    <a href="https://twitter.com/stefanjudis" title="Link to Stefan on Twitter" target="_blank">
+                      <span class="visuallyhidden">Stefan on Twitter</span>
+                      <svg class="icon icon--2x icon--black animate--scale--hover">
+                        <use xlink:href="/icons-<%= hash.svg %>.svg#twitter" />
+                      </svg>
+                    </a>
+                  </li>
+
+                  <li>
+                    <a href="mailto:stefanjudis@gmail.com" title="Send Stefan an email" target="_blank">
+                      <span class="visuallyhidden">Stefan's email address</span>
+                      <svg class="icon icon--2x icon--black animate--scale--hover">
+                        <use xlink:href="/icons-<%= hash.svg %>.svg#email" />
+                      </svg>
+                    </a>
+                  </li>
+
+                </ul>
+
+              </div>
+
+              <div class="flexgrid__item">
+                <h4>Marco Biedermann</h4>
+                <ul class="list--inline list--unstyled">
+
+                  <li>
+                    <a href="https://github.com/marcobiedermann" title="Link to Marco on GitHub" target="_blank">
+                      <span class="visuallyhidden">Marco on Github</span>
+                      <svg class="icon icon--2x icon--black animate--scale--hover">
+                        <use xlink:href="/icons-<%= hash.svg %>.svg#github" />
+                      </svg>
+                    </a>
+                  </li>
+
+                  <li>
+                    <a href="https://twitter.com/m412c0b" title="Link to Marco on Twitter" target="_blank">
+                      <span class="visuallyhidden">Marco on Twitter</span>
+                      <svg class="icon icon--2x icon--black animate--scale--hover">
+                        <use xlink:href="/icons-<%= hash.svg %>.svg#twitter" />
+                      </svg>
+                    </a>
+                  </li>
+
+                </ul>
+              </div>
+
+              <div class="flexgrid__item">
+                <h4>Mar High</h4>
+                <ul class="list--inline list--unstyled">
+
+                  <li>
+                    <a href="https://github.com/marhigh" title="Link to Mar on GitHub" target="_blank">
+                      <span class="visuallyhidden">Radimir on Github</span>
+                      <svg class="icon icon--2x icon--black animate--scale--hover">
+                        <use xlink:href="/icons-<%= hash.svg %>.svg#github" />
+                      </svg>
+                    </a>
+                  </li>
+
+                  <li>
+                    <a href="https://twitter.com/spiderhigh" title="Link to Mar on Twitter" target="_blank">
+                      <span class="visuallyhidden">Marco on Twitter</span>
+                      <svg class="icon icon--2x icon--black animate--scale--hover">
+                        <use xlink:href="/icons-<%= hash.svg %>.svg#twitter" />
+                      </svg>
+                    </a>
+                  </li>
+
+                  <li>
+                    <a href="mailto:hello@marhigh.com" title="Send Mar an email">
+                      <span class="visuallyhidden">Mar's email address</span>
+                      <svg class="icon icon--2x icon--black animate--scale--hover">
+                        <use xlink:href="/icons-<%= hash.svg %>.svg#email" />
+                      </svg>
+                    </a>
+                  </li>
+
+                </ul>
+
+              </div>
+
+              <div class="flexgrid__item">
+                <h4>Radimir Bitsov</h4>
+                <ul class="list--inline list--unstyled">
+
+                  <li>
+                    <a href="https://github.com/radibit" title="Link to Radimir on GitHub" target="_blank">
+                      <span class="visuallyhidden">Radimir on Github</span>
+                      <svg class="icon icon--2x icon--black animate--scale--hover">
+                        <use xlink:href="/icons-<%= hash.svg %>.svg#github" />
+                      </svg>
+                    </a>
+                  </li>
+
+                  <li>
+                    <a href="https://twitter.com/radibit" title="Link to Radimir on Twitter" target="_blank">
+                      <span class="visuallyhidden">Radimir on Twitter</span>
+                      <svg class="icon icon--2x icon--black animate--scale--hover">
+                        <use xlink:href="/icons-<%= hash.svg %>.svg#twitter" />
+                      </svg>
+                    </a>
+                  </li>
+
+                  <li>
+                    <a href="mailto:radimir.bitsov@gmail.com" title="Send Radimir an email">
+                      <span class="visuallyhidden">Radimir's email address</span>
+                      <svg class="icon icon--2x icon--black animate--scale--hover">
+                        <use xlink:href="/icons-<%= hash.svg %>.svg#email" />
+                      </svg>
+                    </a>
+                  </li>
+
+                </ul>
+              </div>
+
+              <div class="flexgrid__item">
+                <h4>Ben Briggs</h4>
+                <ul class="list--inline list--unstyled">
+
+                  <li>
+                    <a href="https://github.com/ben-eb" title="Link to Ben on GitHub" target="_blank">
+                      <span class="visuallyhidden">Radimir on Github</span>
+                      <svg class="icon icon--2x icon--black animate--scale--hover">
+                        <use xlink:href="/icons-<%= hash.svg %>.svg#github" />
+                      </svg>
+                    </a>
+                  </li>
+
+                  <li>
+                    <a href="https://twitter.com/ben_eb" title="Link to Ben on Twitter" target="_blank">
+                      <span class="visuallyhidden">Radimir on Twitter</span>
+                      <svg class="icon icon--2x icon--black animate--scale--hover">
+                        <use xlink:href="/icons-<%= hash.svg %>.svg#twitter" />
+                      </svg>
+                    </a>
+                  </li>
+
+                  <li>
+                    <a href="mailto:beneb.info@gmail.com" title="Send Ben an email">
+                      <span class="visuallyhidden">Radimir's email address</span>
+                      <svg class="icon icon--2x icon--black animate--scale--hover">
+                        <use xlink:href="/icons-<%= hash.svg %>.svg#email" />
+                      </svg>
+                    </a>
+                  </li>
+
+                </ul>
+              </div>
 
           </section>
 
@@ -215,11 +419,11 @@
 
                   <p>...with a little help from our friends</p>
 
-                  <ul class="contributors">
+                  <ul class="contributors list--inline list--unstyled">
 
                     <% _.each( contributors, function( contrib ) { %>
                       <% if ( contrib.login !== 'stefanjudis' && contrib.login !== 'marcobiedermann' ) { %>
-                        <li class="contributor"><a href="<%= contrib.url.replace( 'api.','' ).replace( 'users/','' ) %>" data-url="<%= contrib.avatar_url + '&s=40' %>" data-login="<%= contrib.login %>" target="_blank"></a></li>
+                        <li><a href="<%= contrib.url.replace( 'api.','' ).replace( 'users/','' ) %>" data-url="<%= contrib.avatar_url + '&s=40' %>" data-login="<%= contrib.login %>" title="<%= contrib.login %> on GitHub" target="_blank"></a></li>
                       <% } %>
                     <% } ) %>
 
@@ -233,21 +437,10 @@
 
           </section>
 
-          <section class="section text-center">
-
-            <article class="article">
-
-              <p><a href="https://twitter.com/intent/tweet?url=http%3A%2F%2Fperf-tooling.today&text=@perf_tooling%20A%20resource%20collection%20to%20improve%20your%20workflow%20and%20to%20deliver%20better%20and%20faster%20websites%20%23perfmatters" target="_blank" class="btn btn-primary btn-large">Spread on Twitter</a></p>
-              <p class="social-twitter"><a href="https://twitter.com/perf_tooling" title="perf-tooling on Twitter" target="_blank">Follow <strong>@perf_tooling</strong> on Twitter</a></p>
-
-            </article>
-
-          </section>
-
-          <section class="section sponsor text-center">
+          <section class="site__section text-center">
 
             <h4 class="subline">Sponsored by</h4>
-            <p><a href="https://www.fastly.com/" title="Link to Fastly CDN" target="_blank"><img src="<%= cdn %>/fastly_grey.svg" alt="Logo of CDN Fastly" width="160" height="72"></a></p>
+            <p><a href="https://www.fastly.com/" title="Link to Fastly CDN" target="_blank"><img src="<%= cdn %>/fastly_grey.svg" alt="Logo of CDN Fastly" width="160" height="72" class="center-block"></a></p>
 
           </section>
 
@@ -258,22 +451,15 @@
       <%=
         partial(
           'templates/partials/footer.tpl',
-          {}
+          {
+            cdn              : cdn,
+            hash             : hash
+          }
         )
       %>
 
-    <script src="<%= cdn %>/tooling.js?<%= hash.js %>" async></script>
-    <script>
-      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-
-      ga('create', 'UA-53831300-1', 'auto');
-      ga('send', 'pageview');
-    </script>
+    <script src="<%= cdn %>/tooling-<%= hash.js %>.js" async></script>
 
   </body>
 
 </html>
-

@@ -4,10 +4,15 @@
     partial(
       'templates/partials/head.tpl',
       {
-        cdn  : cdn,
-        css  : css,
-        site : site,
-        svg  : svg
+        cdn       : cdn,
+        css       : css,
+        cssCookie : cssCookie,
+        site      : site,
+        enhance   : enhance,
+        hash      : hash,
+        name      : name,
+        type      : type,
+        query     : query
       }
     )
   %>
@@ -15,24 +20,40 @@
   <body>
 
       <%=
+        ( type === 'videos' || type === 'slides') ?
+          partial(
+            'templates/partials/modals/' + type + '.tpl',
+            {
+              cdn  : cdn,
+              hash : hash
+            }
+          ) : ''
+      %>
+
+      <%=
         partial(
           'templates/partials/header.tpl',
           {
-            active : type,
-            cdn    : cdn,
-            site   : site
+            active           : type,
+            cdn              : cdn,
+            hash             : hash,
+            site             : site
           }
         )
       %>
 
-      <main class="main" role="main">
+      <main class="site__main" role="main">
 
-        <div class="container">
+        <div class="grid__container">
+
+          <h1 class="posts__headline">List of performance <%= type %></h1>
 
           <%=
             partial(
               'templates/partials/fuzzy.tpl',
               {
+                cdn       : cdn,
+                hash      : hash,
                 list      : list,
                 platforms : platforms,
                 query     : query,
@@ -52,12 +73,20 @@
             )
           %>
 
+          <% if ( debug ) { %>
+            <pre><code><%= JSON.stringify( list, null, 2 ) %></code></pre>
+            <pre><code><%= JSON.stringify( people, null, 2 ) %></code></pre>
+          <% } %>
+
           <%=
             partial(
               'templates/partials/lists/' + type + '.tpl',
               {
+                cdn     : cdn,
+                hash    : hash,
                 list    : list,
                 partial : partial,
+                platforms : platforms,
                 people  : people
               }
             )
@@ -71,7 +100,10 @@
       <%=
         partial(
           'templates/partials/footer.tpl',
-          {}
+          {
+            cdn              : cdn,
+            hash             : hash
+          }
         )
       %>
 
@@ -80,23 +112,17 @@
         _.map( list, function( entry ) {
           return {
             fuzzy : entry.fuzzy,
-            name  : entry.name.toLowerCase().replace( /[\s\.,:'"#\(\)|]/g, '-' )
+            id    : entry.id,
+            html  : entry.html,
+            url   : entry.url
           }
         } )
       ) %>;
-    </script>
-    <script src="<%= cdn %>/tooling.js?<%= hash.js %>" async></script>
-    <script>
-      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
-      ga('create', 'UA-53831300-1', 'auto');
-      ga('send', 'pageview');
+      window.type = '<%= type %>';
     </script>
+    <script src="<%= cdn %>/tooling-<%= hash.js %>.js" async></script>
 
   </body>
 
 </html>
-

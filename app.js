@@ -1,143 +1,71 @@
-var express     = require( 'express' );
-var compression = require( 'compression' );
-var md5         = require( 'MD5' );
-var app         = express();
-var fs          = require( 'fs' );
-var fuzzify     = require( './lib/fuzzify' );
-var _           = require( 'lodash' );
-var minify      = require( 'html-minifier' ).minify;
-var request     = require( 'request' );
-var config      = {
-  cdn       : process.env.CDN_URL || '',
-  dataDir   : 'data',
-  listPages : [ 'articles', 'slides', 'tools', 'videos' ],
-  github    : {
-    id    : process.env.GITHUB_ID,
-    token : process.env.GITHUB_TOKEN
-  },
-  platforms : [
-    'bookmarklet',
-    'chrome',
-    'firefox',
-    'internetExplorer',
-    'safari',
-    'mac',
-    'windows',
-    'linux',
-    'cli',
-    'module',
-    'grunt',
-    'gulp',
-    'javascript',
-    'php',
-    'service'
-  ],
-  site      : {
-    name : 'Performance tooling today'
-  },
-  templates : {
-    index : './templates/index.tpl',
-    list  : './templates/list.tpl'
-  },
-  twitter : {
-    consumer_key        : process.env.TWITTER_CONSUMER_KEY,
-    consumer_secret     : process.env.TWITTER_CONSUMER_SECRET,
-    access_token        : process.env.TWITTER_ACCESS_TOKEN,
-    access_token_secret : process.env.TWITTER_ACCESS_TOKEN_SECRET
-  },
-  vimeo   : {
-    clientId     : process.env.VIMEO_CLIENT_ID,
-    clientSecret : process.env.VIMEO_CLIENT_SECRET,
-    accessToken  : process.env.VIMEO_ACCESS_TOKEN
-  },
-  youtube : {
-    token : process.env.YOUTUBE_TOKEN
-  }
+var express      = require( 'express' );
+var compression  = require( 'compression' );
+var app          = express();
+var fs           = require( 'fs' );
+var fuzzify      = require( './lib/fuzzify' );
+var _            = require( 'lodash' );
+var minify       = require( 'html-minifier' ).minify;
+var config       = require( './config/config' );
+var async        = require( 'async' );
+var cookieParser = require( 'cookie-parser' );
+var revisions    = require( './rev.json' );
+
+/**
+ * Helpers to deal with API stuff
+ * @type {Object}
+ */
+var helpers = {
+  github      : ( require( './lib/helper/github' ) ).init(),
+  slideshare  : ( require( './lib/helper/slideshare' ) ).init(),
+  speakerdeck : ( require( './lib/helper/speakerdeck' ) ).init(),
+  twitter     : ( require( './lib/helper/twitter' ) ).init(),
+  vimeo       : ( require( './lib/helper/vimeo' ) ).init(),
+  youtube     : ( require( './lib/helper/youtube' ) ).init()
 };
-
-/**
- * Youtube API stuff
- */
-var Youtube = ( require( 'youtube-api' ) );
-
-Youtube.authenticate( {
-  type : 'key',
-  key  : config.youtube.token
-} );
-
-
-/**
- * Vimeo api stuff
- */
-var Vimeo = require( 'vimeo-api' ).Vimeo;
-var vimeo = new Vimeo(
-  config.vimeo.clientId,
-  config.vimeo.clientSecret,
-  config.vimeo.accessToken
-);
-
-
-/**
- * Twitter api stuff
- */
-if (
-   config.twitter.consumer_key &&
-   config.twitter.consumer_secret &&
-   config.twitter.access_token &&
-   config.twitter.access_token_secret
-) {
-  var Twit = require( 'twit' );
-  var twit = new Twit( {
-    consumer_key        : config.twitter.consumer_key,
-    consumer_secret     : config.twitter.consumer_secret,
-    access_token        : config.twitter.access_token,
-    access_token_secret : config.twitter.access_token_secret
-  } );
-}
-
 
 var port         = process.env.PORT || 3000;
+var data         = config.listPages.reduce( function( data, listPage ) {
+  data[ listPage ] = getList( listPage );
 
-
-var data         = {
-  people   : {}
-};
-
-data.articles = getList( 'articles' );
-data.slides   = getList( 'slides' );
-data.tools    = getList( 'tools' );
-data.videos   = getList( 'videos' );
+  return data;
+}, { people   : {} } );
 
 /**
- * List of contributors
- * will be fetched async
+ * Demo tool object containing all available properties
+ * @type {Object}
  */
-var contributors;
-
+var demoTool = {
+  name        : '_DEMO TOOL_',
+  id          : '_DEMO TOOL_'.toLowerCase().replace( /[\s\.,:'"#\(\)|]/g, '-' ),
+  description : 'A demo tool displaying all available platforms',
+  tags        : [ 'images', 'css', 'perf', '60fps', 'http2', 'network' ],
+  fuzzy       : '',
+  hidden      : false,
+  stars       : {}
+};
 
 /**
  * pages object representing
  * all routes
  */
-var pages = {
-  index    : null,
-  tools    : null,
-  articles : null,
-  slides   : null,
-  videos   : null
-};
+var pages = config.listPages.reduce( function( pages, listPage ) {
+  pages[ listPage ] = null;
+
+  return pages;
+}, { index : null } );
 
 
 /**
  * Reduce I/O and read files only on start
  */
 var pageContent = {
-  css       : fs.readFileSync( './public/main.css', 'utf8' ),
+  css       : fs.readFileSync( './public/main-' + revisions.styles + '.css', 'utf8' ),
+  enhance   : fs.readFileSync( './public/enhance.js', 'utf8' ),
   hashes    : {
-    css : md5( fs.readFileSync( './public/main.css', 'utf8' ) ),
-    js  : md5( fs.readFileSync( './public/tooling.js', 'utf8' ) )
+    css     : revisions.styles,
+    js      : revisions.scripts,
+    svg     : revisions.svg
   },
-  svg       : fs.readFileSync( './public/icons.svg', 'utf8' ),
   templates : {
     index : fs.readFileSync( config.templates.index ),
     list  : fs.readFileSync( config.templates.list )
@@ -149,32 +77,15 @@ var pageContent = {
  * Fetch list of contributors
  */
 function fetchContributors() {
-  if ( config.github.id && config.github.token ) {
-    request(
-      {
-        url     : 'https://api.github.com/repos/stefanjudis/perf-tooling/contributors?client_id=' + config.github.id + '&client_secret=' + config.github.token,
-        headers : {
-          'User-Agent' : 'perf-tooling.today'
-        }
-      },
-      function( error, response, body ) {
-        if ( !error && response && response.statusCode === 200 ) {
-          try {
-            contributors = JSON.parse( body );
-          } catch( e ) {
-            contributors = false;
-            console.log( error );
-            console.log( response );
-            console.log( e );
-          }
+  helpers.github.getContributors( function( error, contributors ) {
+    if ( error ) {
+      return console.warn( error );
+    }
 
-          pages.index = renderPage( 'index' );
-        }
-      }
-    );
-  } else {
-    console.log( 'No Github id and token set!!!' );
-  }
+    data.contributors = contributors;
+
+    pages.index = renderPage( 'index' );
+  } );
 }
 
 
@@ -182,51 +93,47 @@ function fetchContributors() {
  * Fetch github stars
  */
 function fetchGithubStars() {
+  var queue = [];
+
   _.each( data.tools, function( tool ) {
     _.forIn( tool, function( value, key ) {
       tool.stars = data.tools.stars || {};
 
-      if ( config.github.id && config.github.token ) {
-        if (
-          key !== 'description' &&
-          key !== 'name' &&
-          key !== 'type' &&
-          key !== 'tags' &&
-          key !== 'fuzzy' &&
-          /github/.test( value )
-        ) {
-          var url = 'https://api.github.com/repos/' +
-                      value.replace( 'https://github.com/', '' ).split( '#' )[ 0 ] +
-                      '?client_id=' + config.github.id +
-                      '&client_secret=' + config.github.token;
+      if (
+        value.url &&
+        /github/.test( value.url )
+      ) {
+        queue.push( function( done ) {
+          var project = value.url.replace( 'https://github.com/', '' ).split( '#' )[ 0 ];
 
-          request(
-            {
-              url     : url,
-              headers : {
-                'User-Agent' : 'perf-tooling.today'
-              }
-            },
-            function( error, response, body ) {
-              if ( !error && response && response.statusCode === 404 ) {
-                console.log( 'NOT FOUND: ' + url );
+          helpers.github.getStars(
+            project,
+            function( error, stars ) {
+              if ( error ) {
+                console.warn( 'ERROR -> fetchGithubStars' );
+                console.warn( 'ERROR -> ' + project );
+                console.warn( error );
+                return done( null );
               }
 
-              try {
-                var stars = JSON.parse( body ).stargazers_count;
-                tool.stars[ key ] = stars;
+              tool.stars[ key ] = stars;
 
-                pages.tools = renderPage( 'tools' );
-              } catch( e ) {
-                console.log( error );
-                console.log( response );
-                console.log( e );
-              }
+              pages.tools = renderPage( 'tools' );
+
+              // give it a bit of time
+              // to rest and not reach the API limits
+              setTimeout( function() {
+                done( null );
+              }, config.timings.requestDelay );
             }
           );
-        }
+        } );
       }
     } );
+  } );
+
+  async.waterfall( queue, function() {
+    console.log( 'DONE -> fetchGithubStars()' );
   } );
 }
 
@@ -235,53 +142,64 @@ function fetchGithubStars() {
  * Fetch twitter data
  */
 function fetchTwitterUserMeta() {
-  if ( twit ) {
-    /**
-     * Fetch twitter meta for people
-     */
-    function fetchTwitterUserData( userName, type ) {
-      userName = userName.replace( '@', '' );
+  var queue          = [];
+  var fetchedAuthors = [];
 
-      if ( typeof data.people[ userName ] === 'undefined' ) {
-        twit.get(
-          '/users/show/:id',
-          { id : userName.replace( '@') },
-          function( err, twitterData, res ) {
-            if ( err ) {
-              console.log( err );
+  /**
+   * Evaluate set authors for each entry
+   * @param  {String} type entry type
+   */
+  function evalAuthors( type ) {
+    _.each( data[ type ], function( entry ) {
+      if ( entry.authors && entry.authors.length ) {
+        _.each( entry.authors, function( author ) {
+          if ( author.twitter ) {
+            var userName = author.twitter.replace( '@', '' );
 
-              return
+            if ( fetchedAuthors.indexOf( userName ) === -1 ) {
+              fetchedAuthors.push( userName );
+
+              queue.push( function( done ) {
+                helpers.twitter.fetchTwitterUserData(
+                  userName,
+                  function( error, user ) {
+                    if ( error ) {
+                      console.warn( 'ERROR -> fetchTwitterUserData' );
+                      console.warn( 'ERROR -> ' + userName );
+                      console.warn( 'ERROR -> ' +  error );
+                      return done( null );
+                    }
+
+                    data.people[ userName ] = user;
+
+                    // render it again
+                    // because we had a data update
+                    config.listPages.forEach( function( listPage ) {
+                      pages[ listPage ] = renderPage( listPage );
+                    } );
+
+                    // give it a bit of time
+                    // to rest and not reach the API limits
+                    setTimeout( function() {
+                      done( null );
+                    }, config.timings.requestDelay );
+                  }
+                );
+              } );
             }
-
-            data.people[ userName ] = {
-              description   : twitterData.description,
-              followerCount : twitterData.followers_count,
-              image         : twitterData.profile_image_url
-            }
-
-            pages[ type ] = renderPage( type );
+          }
         } );
       }
-    }
-
-    _.each( data.videos, function( entry ) {
-      if ( entry.social && entry.social.twitter ) {
-        fetchTwitterUserData( entry.social.twitter, 'videos' );
-      }
     } );
-    _.each( data.articles, function( entry ) {
-      if ( entry.social && entry.social.twitter ) {
-        fetchTwitterUserData( entry.social.twitter, 'articles' );
-      }
-    } );
-    _.each( data.slides, function( entry ) {
-      if ( entry.social && entry.social.twitter ) {
-        fetchTwitterUserData( entry.social.twitter, 'slides' );
-      }
-    } );
-  } else {
-    console.log( 'Twitter tokens missing' );
   }
+
+  config.listPages.forEach( function( listPage ) {
+    evalAuthors( listPage );
+  } );
+
+  async.waterfall( queue, function() {
+    console.log( 'DONE -> fetchTwitterUserMeta()' );
+  } );
 }
 
 
@@ -289,78 +207,100 @@ function fetchTwitterUserMeta() {
  * Fetch video meta data
  */
 function fetchVideoMeta() {
+  var queue = [];
+
   _.each( data.videos, function( video ) {
-    if ( config.youtube.token ) {
-      if ( video.youtubeId ) {
-        Youtube.videos.list( {
-          part : 'snippet,statistics',
-          id   : video.youtubeId
-        }, function( error, data ) {
+    if ( video.youtubeId ) {
+      queue.push( function( done ) {
+        helpers.youtube.fetchVideoMeta( video.youtubeId, function( error, meta ) {
           if ( error ) {
-            console.log( 'ERROR IN YOUTUBE API CALL' );
-            console.log( error );
-
-            return;
+            console.warn( 'ERROR -> youtube.fetchVideoMeta' );
+            console.warn( 'ERROR -> ' + video.youtubeId );
+            console.warn( 'ERROR -> ' + error );
+            return done( null );
           }
 
-          video.publishedAt = new Date( data.items[ 0 ].snippet.publishedAt );
-          video.thumbnail   =  {
-            url    : data.items[ 0 ].snippet.thumbnails.medium.url,
-            width  : data.items[ 0 ].snippet.thumbnails.medium.width,
-            height : data.items[ 0 ].snippet.thumbnails.medium.height
-          };
-          video.stats       = {
-            viewCount    : data.items[ 0 ].statistics.viewCount,
-            likeCount    : data.items[ 0 ].statistics.likeCount,
-            dislikeCount : data.items[ 0 ].statistics.dislikeCount
-          };
-          video.title       = data.items[ 0 ].snippet.title;
-          video.url         = 'https://www.youtube.com/watch?v=' + video.youtubeId;
+          _.extend( video, meta );
 
           pages.videos = renderPage( 'videos' );
+
+          // give it a bit of time
+          // to rest and not reach the API limits
+          setTimeout( function() {
+            done( null );
+          }, config.timings.requestDelay );
         } );
-      }
-    } else {
-      console.log( 'No Youtube token set!!!' );
+      } );
     }
 
-    if (
-      config.vimeo.clientId &&
-      config.vimeo.clientSecret &&
-      config.vimeo.accessToken
-    ) {
-      if ( video.vimeoId ) {
-        vimeo.request( {
-          path : '/videos/' + video.vimeoId
-        }, function( error, body, statusCode ) {
+    if ( video.vimeoId ) {
+      queue.push( function( done ) {
+        helpers.vimeo.fetchVideoMeta( video.vimeoId, function( error, meta ) {
           if ( error ) {
-            console.log( 'ERROR IN VIMEO API CALL' );
-            console.log( error );
-            console.log( statusCode );
-
-            return;
+            console.warn( 'ERROR -> vimeo.fetchVideoMeta' );
+            console.warn( 'ERROR -> ' + video.vimeoId );
+            console.warn( 'ERROR -> ' + error );
+            return done( null );
           }
 
-          video.duration    = body.duration / 60;
-          video.publishedAt = new Date( body.created_time );
-          video.thumbnail   = {
-            url    : body.pictures.sizes[ 2 ].link,
-            width  : body.pictures.sizes[ 2 ].width,
-            height : body.pictures.sizes[ 2 ].height
-          };
-          video.stats       = {
-            viewCount : body.stats.plays,
-            likeCount : body.metadata.connections.likes.total
-          };
-          video.title       = body.name;
-          video.url         = body.link;
+          _.extend( video, meta );
 
           pages.videos = renderPage( 'videos' );
+
+          // give it a bit of time
+          // to rest and not reach the API limits
+          setTimeout( function() {
+            done( null );
+          }, config.timings.requestDelay );
         } );
-      }
-    } else {
-      console.log( 'Vimeo credentials not set' );
+      } );
     }
+  } );
+
+  async.waterfall( queue, function() {
+    console.log( 'DONE -> fetchVideoMeta()' );
+  } );
+}
+
+
+/**
+ * Fetch slide meta data
+ */
+function fetchSlideMeta() {
+  var queue = [];
+
+  _.each( data.slides, function( slide ) {
+    var match = slide.url.match( /(slideshare|speakerdeck)/g );
+    if ( match ) {
+      queue.push( function( done ) {
+        if ( helpers[ match[ 0 ] ] ) {
+          helpers[ match[ 0 ] ].getMeta( slide.url, function( error, meta ) {
+            if ( error ) {
+              console.warn( 'ERROR -> vimeo.fetchSlideMeta' );
+              console.warn( 'ERROR -> ' + slide.url );
+              console.warn( 'ERROR -> ' + error );
+              return done( null );
+            }
+
+            _.extend( slide, meta );
+
+            pages.slides = renderPage( 'slides' );
+
+            // give it a bit of time
+            // to rest and not reach the API limits
+            setTimeout( function() {
+              done( null );
+            }, config.timings.requestDelay );
+          } );
+        } else {
+          done( null );
+        }
+      } );
+    }
+  } );
+
+  async.waterfall( queue, function() {
+    console.log( 'DONE -> fetchSlideMeta()' );
   } );
 }
 
@@ -368,11 +308,13 @@ function fetchVideoMeta() {
 /**
  * Read files and get tools
  *
+ * @param {String} type type
+ *
  * @return {Object} tools
  */
 function getList( type ) {
-  var list = [];
-  var entries = fs.readdirSync( config.dataDir + '/' + type );
+  var list                 = [];
+  var entries              = fs.readdirSync( config.dataDir + '/' + type );
 
   entries.forEach( function( entry ) {
     if ( entry[ 0 ] !== '.' ) {
@@ -384,11 +326,26 @@ function getList( type ) {
           )
         );
 
+        var platformsNames = config.platforms.map( function( platform ) {
+          return platform.name;
+        } );
+
         entry.fuzzy = fuzzify(
           entry,
-          config.platforms
-        ).toLowerCase();
+          platformsNames
+        ).replace( /http(s)?:\/\//, '' ).toLowerCase();
+        entry.id     = entry.name.toLowerCase().replace( /[\s\.,:'"#\(\)|]/g, '-' );
         entry.hidden = false;
+
+        if ( type === 'videos' ) {
+          if ( entry.youtubeId ) {
+            entry.html = '<iframe width="720" height="405" src="https://www.youtube.com/embed/' + entry.youtubeId + '" frameborder="0" allowfullscreen></iframe>';
+          }
+
+          if ( entry.vimeoId ) {
+            entry.html = '<iframe src="//player.vimeo.com/video/' + entry.vimeoId + '" width="720" height="405" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>';
+          }
+        }
 
         list.push( entry );
       } catch( e ) {
@@ -406,17 +363,22 @@ function getList( type ) {
 /**
  * Render page
  *
- * @param  {String} type  page type
- * @param  {String} query optional search query
+ * @param  {String} type    page type
+ * @param  {Object} options optional options
  *
  * @return {String}       rendered page
  */
-function renderPage( type, query ) {
+function renderPage( type, options ) {
+  options = options || {};
+
   var template = ( type === 'index' ) ? 'index' : 'list';
   var list     = data[ type ] || null;
 
-  if ( query ) {
-    var queryValues  = query.split( ' ' );
+  var cssCookie = options.cssCookie;
+  var debug     = false;
+
+  if ( options.query ) {
+    var queryValues  = options.query.q ? options.query.q.split( ' ' ) : '';
     var length       = queryValues.length;
 
     list   = _.cloneDeep( list ).map( function( entry ) {
@@ -433,42 +395,70 @@ function renderPage( type, query ) {
 
       return entry;
     } );
+
+    debug = options.query.debug;
+
+    if ( type === 'tools' && options.query.debug ) {
+      _.each( config.platforms, function( platform ) {
+          demoTool[ platform.name ] = {};
+          demoTool.stars[ platform.name ] = 10000;
+      } );
+
+      list.unshift( demoTool );
+    }
+  }
+
+
+  /**
+   * Partial function to enable partials
+   * in lodash templates
+   *
+   * @param  {String} path    file path
+   * @param  {Object} options options for lodash templates
+   * @return {String}         rendered partial
+   */
+  function partial( path, data, options ) {
+    options = options || {};
+
+    return _.template(
+      fs.readFileSync( path ),
+      options
+    )(data);
   }
 
   return minify(
     _.template(
-      pageContent.templates[ template ],
-      {
-        css           : pageContent.css,
-        cdn           : config.cdn,
-        contributors  : contributors,
-        partial       : function( path, options ) {
-          options = options || {};
-
-          return _.template(
-            fs.readFileSync( path ),
-            options
-          );
-        },
-        people        : data.people,
-        platforms     : config.platforms,
-        resourceCount : {
-          tools    : data.tools.length,
-          articles : data.articles.length,
-          videos   : data.videos.length,
-          slides   : data.slides.length
-        },
-        site          : config.site,
-        svg           : pageContent.svg,
-        list          : list,
-        hash          : {
-          css : pageContent.hashes.css,
-          js  : pageContent.hashes.js
-        },
-        query         : query,
-        type          : type
-      }
-    ), {
+      pageContent.templates[ template ]
+    )({
+      css              : pageContent.css,
+      cssCookie        : cssCookie,
+      enhance          : pageContent.enhance,
+      cdn              : config.cdn,
+      contributors     : data.contributors,
+      debug            : !! debug,
+      partial          : partial,
+      people           : data.people,
+      platforms        : config.platforms,
+      resourceCount    : {
+        audits   : data.audits.length,
+        tools    : data.tools.length,
+        articles : data.articles.length,
+        videos   : data.videos.length,
+        slides   : data.slides.length,
+        books    : data.books.length,
+        courses  : data.courses.length
+      },
+      site             : config.site,
+      list             : list,
+      hash             : {
+        css  : pageContent.hashes.css,
+        js   : pageContent.hashes.js,
+        svg  : pageContent.hashes.svg
+      },
+      query            : options.query ? options.query.q : '',
+      type             : type,
+      name             : type.charAt( 0 ).toUpperCase() + type.slice( 1 )
+    }), {
       keepClosingSlash      : true,
       collapseWhitespace    : true,
       minifyJS              : true,
@@ -500,6 +490,12 @@ fetchVideoMeta();
 
 
 /**
+ * fetch slide meta data
+ */
+fetchSlideMeta();
+
+
+/**
  * fetch twitter user meta data
  */
 fetchTwitterUserMeta();
@@ -511,10 +507,10 @@ setInterval( function() {
   fetchGithubStars();
   fetchVideoMeta();
   fetchTwitterUserMeta();
-}, 1000 * 60 * 60 * 12 );
+}, config.timings.refresh );
 
 app.use( compression() );
-
+app.use( cookieParser() );
 
 /**
  * Render index page
@@ -523,10 +519,33 @@ config.listPages.forEach( function( page ) {
   pages[ page ] = renderPage( page );
 
   app.get( '/' + page, function( req, res ) {
-    if ( req.query && req.query.q && req.query.q.length ) {
-      res.send( renderPage( page, req.query.q ) );
+    if (
+      req.query &&
+      (
+        req.query.q || req.query.debug
+      )
+    ) {
+      res.send(
+        renderPage(
+          page,
+          {
+            query : req.query
+          }
+        )
+      );
     } else {
-      res.send( pages[ page ] );
+      if ( req.cookies.maincss ) {
+        res.send(
+          renderPage(
+            page,
+            {
+              cssCookie : req.cookies.maincss
+            }
+          )
+        );
+      } else {
+        res.send( pages[ page ] );
+      }
     }
   } );
 } );
@@ -534,9 +553,21 @@ config.listPages.forEach( function( page ) {
 pages.index = renderPage( 'index' );
 
 app.get( '/', function( req, res ) {
-  res.send( pages.index );
+  if ( req.cookies.maincss ) {
+    res.send(
+      renderPage(
+        'index',
+        {
+          cssCookie : req.cookies.maincss
+        }
+      )
+    );
+  } else {
+    res.send( pages.index );
+  }
 } );
 
 app.use( express.static( __dirname + '/public', { maxAge : 31536000000 } ) );
 
+console.log( 'STARTING AT PORT ' + port );
 app.listen( port );

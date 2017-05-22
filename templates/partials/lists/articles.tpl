@@ -1,44 +1,47 @@
 <ul class="posts">
   <%
-    var orderedList = _.sortBy( list, function( article ) {
-      return article.date || -1;
+    list = _.sortBy( list, function( article ) {
+      return article.date ? + ( new Date( article.date ) ) : -1;
     } ).reverse();
   %>
-  <% _.each( orderedList , function( article ) { %>
+  <% _.each( list , function( article ) { %>
 
-    <li id="<%= article.name.toLowerCase().replace( /[\s\.,:'"#\(\)|]/g, '-' ) %>" class="post-article <%= ( article.hidden === true ) ? 'is-hidden' : '' %>">
+    <li id="<%= article.name.toLowerCase().replace( /[\s\.,:'"#\(\)|]/g, '-' ) %>" class="post post--article media <%= ( article.hidden === true ) ? 'is-hidden' : '' %>">
 
-      <% var twitterHandle = ( article.social && article.social.twitter ) ? article.social.twitter.replace( '@', '' ) : false; %>
+      <%=
+        partial(
+          'templates/partials/authors/images.tpl',
+          {
+            authors : article.authors,
+            people  : people
+          }
+        )
+      %>
 
-      <% if ( twitterHandle && people[ twitterHandle ] ) { %>
+      <div class="media__body">
 
-        <a href="https://twitter.com/<%= twitterHandle %>" title="Twitter profile of <%= article.author %>" target="_blank"><img src="<%= people[ twitterHandle ].image %>" title="Image of <%= article.author %>" class="post-author-img"></a>
+        <h3><a href="<%= article.url %>" class="link--text" alt="Link to <%= article.name %>" title="Link to article" target="_blank"><%= article.name %></a></h3>
 
-      <% } %>
-
-      <div class="post-content">
-
-        <h3 class="post-title"><a href="<%= article.url %>" alt="Link to <%= article.name %>" title="Link to article" target="_blank"><%= article.name %></a></h3>
-
-        <% if ( twitterHandle && people[ twitterHandle ] ) { %>
-
-          <h4><%= article.date %> by <a href="https://twitter.com/<%= twitterHandle %>" title="Twitter profile of <%= article.author %>" target="_blank"><%= article.author %></a> (<%= people[ twitterHandle ].followerCount %> followers)</h4>
-
-        <% } else { %>
-
-          <h4><%= article.date %> by <%= article.author %></h4>
-
-        <% } %>
+        <%=
+          partial(
+            'templates/partials/authors/names.tpl',
+            {
+              entry   : article,
+              authors : article.authors,
+              people  : people
+            }
+          )
+        %>
 
         <% if ( article.stats ) { %>
 
-            <ul class="post-stats">
+          <ul class="post__stats">
 
-              <li>Length: <%= article.stats.length %> Words</li>
+            <li>Length: <%= article.stats.length %> Words</li>
 
-            </ul>
+          </ul>
 
-          <% } %>
+        <% } %>
 
         <% if ( article.tags && article.tags.length ) { %>
 

@@ -1,40 +1,25 @@
 .media {
   .clearfix;
-  position: relative;
-}
 
-.media-obj-left,
-.media-obj-right {
-  margin-bottom: 1rem;
+  &__obj {
 
-  @media (min-width: @media-small) {
-    max-width: 38%;
+    @media (min-width: @media--small) {
+      max-width: 50%;
+    }
+
+    &--left {
+
+      @media (min-width: @media--small) {
+        float: left;
+        margin: 0 1rem 0 0;
+      }
+
+    }
+
   }
 
-}
-
-.media-obj-left {
-
-  @media (min-width: @media-small) {
-    margin: 0 1rem 1rem 0;
-    float: left;
+  &__body {
+    overflow: hidden;
   }
 
-}
-
-.media-obj-right {
-
-  @media (min-width: @media-small) {
-    margin: 0 0 1rem 1rem;
-    float: right;
-  }
-
-}
-
-.media-obj-above {
-  margin-bottom: 1rem;
-}
-
-.media-body {
-  overflow: hidden;
 }
